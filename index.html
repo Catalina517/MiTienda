@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Tablero de Ventas MiTienda</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;700&family=Source+Sans+3:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Diseño: tablero de una sola columna; barra de filtros fija arriba,
+   tarjetas de indicadores, rejilla de gráficos de 2 columnas y documentación. */
+:root {
+  --bg: #eef1f5;  --surface: #ffffff;  --ink: #1d2533;  --muted: #5d6878;
+  --line: #d9dfe7; --accent: #334f7a; --accent-soft: #e4ebf5; --bar: #f8f9fb;
+  --tip: #1d2533; --tip-ink: #ffffff;
+  --font-display: "Sora", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11151c; --surface: #1a2029; --ink: #e7ebf1; --muted: #9aa5b5;
+    --line: #2c3442; --accent: #8fb0e3; --accent-soft: #233046; --bar: #161b23;
+    --tip: #f1f4f8; --tip-ink: #11151c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11151c; --surface: #1a2029; --ink: #e7ebf1; --muted: #9aa5b5;
+  --line: #2c3442; --accent: #8fb0e3; --accent-soft: #233046; --bar: #161b23;
+  --tip: #f1f4f8; --tip-ink: #11151c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 15.5px; line-height: 1.5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto;
+  height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bar); }
+.inner { max-width: 1180px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header .inner { padding-block: 26px 18px; display: grid; gap: 6px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--accent); }
+h1 { font-family: var(--font-display); font-weight: 700; margin: 0;
+  font-size: clamp(1.7rem, 3.6vw, 2.5rem); line-height: 1.1; text-wrap: balance; }
+.lead { margin: 0; color: var(--muted); max-width: 72ch; }
+/* ---------- Barra de filtros (fija) ---------- */
+.filters { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--bar); border-block: 1px solid var(--line); }
+.filters .inner { padding-block: 10px; display: flex; flex-wrap: wrap;
+  gap: 10px 22px; align-items: center; }
+.fgroup { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
+.flabel { font-size: 12px; font-weight: 700; letter-spacing: .06em;
+  text-transform: uppercase; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 600 14px var(--font-body); color: var(--muted); background: var(--surface);
+  border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px;
+  cursor: pointer; display: inline-flex; align-items: center; gap: 7px; }
+.chip i { width: 9px; height: 9px; border-radius: 50%; background: var(--dot, var(--muted)); }
+.chip[aria-pressed="true"] { color: var(--ink); border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink); }
+.chip:focus-visible, .reset:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.reset { margin-left: auto; font: 600 14px var(--font-body); color: var(--accent);
+  background: none; border: 0; cursor: pointer; padding: 5px 2px; text-decoration: underline; }
+/* ---------- Contenido ---------- */
+main .inner { padding-block: 20px 56px; display: grid; gap: 20px; }
+h2 { font-family: var(--font-display); font-size: 1.2rem; margin: 6px 0 0; text-wrap: balance; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 12px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 14px 16px; min-width: 0; }
+.kpi .v { font-family: var(--font-display); font-size: 1.65rem; font-weight: 700;
+  font-variant-numeric: tabular-nums; line-height: 1.15; }
+.kpi .l { font-size: 14px; color: var(--muted); }
+.kpi .s { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-top: 4px; }
+.grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 10px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  padding: 14px; min-width: 0; display: grid; gap: 8px; align-content: start; margin: 0; }
+.chart { position: relative; }
+.chart img { width: 100%; height: auto; display: block; border-radius: 8px;
+  background: #fff; border: 1px solid var(--line); cursor: crosshair; }
+.tip { position: absolute; pointer-events: none; z-index: 3; background: var(--tip);
+  color: var(--tip-ink); font: 500 12.5px/1.4 var(--font-body); padding: 7px 10px;
+  border-radius: 6px; white-space: pre-line; max-width: 260px;
+  box-shadow: 0 4px 14px rgb(0 0 0 / .18); }
+.marca { position: absolute; pointer-events: none; border: 2px solid var(--accent);
+  border-radius: 3px; z-index: 2; }
+.card p { margin: 0; font-size: 14px; color: var(--muted); }
+.lectura { background: var(--accent-soft); border-radius: 12px; padding: 14px 18px; }
+.lectura ul { margin: 6px 0 0; padding-left: 18px; display: grid; gap: 3px; }
+.tag { display: inline-block; font-family: var(--font-mono); font-size: 11px;
+  border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; color: var(--muted);
+  vertical-align: middle; margin-left: 6px; font-weight: 400; }
+/* ---------- Tabla ---------- */
+.tabla { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 720px; font-size: 14px; }
+th, td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+th { font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+td.n { text-align: right; font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+th.n { text-align: right; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+/* ---------- Documentación y modelo estrella ---------- */
+.doc { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; }
+.doc p, .doc li { max-width: 68ch; }
+.doc h3 { margin: 10px 0 4px; }
+.steps { margin: 0; padding-left: 20px; display: grid; gap: 5px; }
+.estrella { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tb { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 12.5px;
+  background: var(--bg); min-width: 0; overflow-wrap: anywhere; }
+.tb b { display: block; font-family: var(--font-mono); font-size: 12.5px; color: var(--accent); }
+.tb.fact { border: 2px solid var(--accent); background: var(--accent-soft); }
+.tb span { color: var(--muted); }
+pre { background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 12px;
+  font: 12.5px/1.5 var(--font-mono); overflow-x: auto; margin: 6px 0 0; }
+code { font-family: var(--font-mono); font-size: 13px; background: var(--accent-soft);
+  padding: 1px 5px; border-radius: 4px; }
+footer .inner { padding-block: 0 40px; font-size: 13px; color: var(--muted); display: grid; gap: 3px; }
+@media (max-width: 820px) {
+  .grid, .doc { grid-template-columns: minmax(0, 1fr); }
+  .reset { margin-left: 0; }
+  .filters { position: static; }
+}
+@media (max-width: 480px) { .estrella { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+<header><div class="inner">
+  <span class="eyebrow">MiTienda Online · Data Warehouse + Seaborn</span>
+  <h1>Tablero de ventas MiTienda</h1>
+  <p class="lead">Ventas facturadas entre 31/03/2000 y 20/11/2025. Use los filtros para
+    recalcular los indicadores y los 12 gráficos de Seaborn, y pase el mouse sobre
+    cualquier barra, punto o celda para ver su valor. Los datos se consultan con SQL
+    desde un modelo estrella.</p>
+</div></header>
+
+<nav class="filters" aria-label="Filtros"><div class="inner">
+  <div class="fgroup">
+    <span class="flabel" id="l-pago">Forma de pago</span>
+    <div class="chips" role="group" aria-labelledby="l-pago" id="f-pago"></div>
+  </div>
+  <div class="fgroup">
+    <span class="flabel" id="l-tipo">Tipo de venta</span>
+    <div class="chips" role="group" aria-labelledby="l-tipo" id="f-tipo"></div>
+  </div>
+  <button class="reset" id="reset" type="button">Quitar filtros</button>
+</div></nav>
+
+<main><div class="inner">
+  <section aria-label="Indicadores">
+    <div class="kpis" id="kpis"></div>
+  </section>
+
+  <section class="lectura" aria-labelledby="t-lect">
+    <h2 id="t-lect">Lectura rápida <span class="tag" id="estado"></span></h2>
+    <ul id="lectura"></ul>
+  </section>
+
+  <section aria-labelledby="t-ventas">
+    <h2 id="t-ventas">Ventas</h2>
+    <div class="grid">
+      <figure class="card"><div class="chart" data-g="anio"><img alt="Ventas totales por año"></div>
+        <p>Tendencia de las ventas año a año. Los años sin facturas quedan en cero.</p></figure>
+      <figure class="card"><div class="chart" data-g="pago_tipo"><img alt="Ventas por forma de pago y tipo de venta"></div>
+        <p>Equivale a las segmentaciones de Power BI: cuánto se vende por cada medio de pago y canal.</p></figure>
+      <figure class="card"><div class="chart" data-g="productos"><img alt="Productos con más ventas"></div>
+        <p>Productos con mayor valor vendido (cantidad × precio unitario).</p></figure>
+      <figure class="card"><div class="chart" data-g="caja"><img alt="Distribución del valor por factura según tipo de venta"></div>
+        <p>Diagrama de cajas con cada factura como un punto: muestra cuánto varía el valor de una venta.</p></figure>
+      <figure class="card"><div class="chart" data-g="dispersion"><img alt="Dispersión de cantidad contra precio unitario"></div>
+        <p>Cada burbuja es una factura; su tamaño es el valor total de la venta.</p></figure>
+      <figure class="card"><div class="chart" data-g="calor"><img alt="Mapa de calor de ventas por trimestre y quinquenio"></div>
+        <p>Muestra en qué trimestres y periodos de cinco años se concentran las ventas.</p></figure>
+    </div>
+  </section>
+
+  <section aria-labelledby="t-quien">
+    <h2 id="t-quien">Clientes, ciudades y proveedores</h2>
+    <div class="grid">
+      <figure class="card"><div class="chart" data-g="clientes"><img alt="Clientes con más compras"></div>
+        <p>Clientes que más compraron en el periodo.</p></figure>
+      <figure class="card"><div class="chart" data-g="ciudades"><img alt="Ventas por ciudad del cliente"></div>
+        <p>Ciudad tomada de la dirección registrada del cliente.</p></figure>
+      <figure class="card"><div class="chart" data-g="proveedores"><img alt="Proveedores con más ventas"></div>
+        <p>Proveedor del producto vendido, obtenido a través de la dimensión producto.</p></figure>
+      <figure class="card"><div class="chart" data-g="meses"><img alt="Ventas por mes del año"></div>
+        <p>Suma de todos los años por mes: ayuda a ver si hay temporadas de más ventas.</p></figure>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="t-det">
+    <h2 id="t-det">Facturas de mayor valor</h2>
+    <p>Las 10 facturas con mayor valor que cumplen los filtros.</p>
+    <div class="tabla"><table id="tabla"></table></div>
+  </section>
+
+  <section aria-labelledby="t-ped">
+    <h2 id="t-ped">Operación de pedidos 2024–2025 <span class="tag">no depende de los filtros</span></h2>
+    <p style="margin:4px 0 10px;color:var(--muted)">Los pedidos no tienen forma de pago ni tipo de venta;
+      se analizan por empleado y por mes. Su valor se estima con el precio de lista del producto.</p>
+    <div class="kpis" id="kpis-ped"></div>
+    <div class="grid">
+      <figure class="card"><div class="chart" data-p="emp"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAkQAAAF6CAYAAAD4eEcaAAAAOnRFWHRTb2Z0d2FyZQBNYXRwbG90bGliIHZlcnNpb24zLjEwLjAsIGh0dHBzO[...]
+      <figure class="card"><div class="chart" data-p="mes"><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAkQAAAF6CAYAAAD4eEcaAAAAOnRFWHRTb2Z0d2FyZQBNYXRwbG90bGliIHZlcnNpb24zLjEwLjAsIGh0dHBzO[...]
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="t-dw">
+    <h2 id="t-dw">Data Warehouse: modelo estrella</h2>
+    <div class="doc">
+      <div>
+        <p>Las seis hojas del archivo <code>MiTiendaOnline.xls</code> se transforman en un
+          <b>modelo estrella</b> con dos tablas de hechos y siete dimensiones. Las tablas se
+          crean con llaves primarias y foráneas y se cargan en <b>SQLite</b>. El mismo
+          código funciona con <b>PostgreSQL, MySQL o SQL Server</b> cambiando una línea
+          (<code>MOTOR</code>), y el script <code>mitienda_dw.sql</code> permite crear el DW
+          directamente desde pgAdmin, MySQL Workbench o SSMS.</p>
+        <div class="estrella" style="margin-top:12px">
+          <div class="tb"><b>dim_tiempo</b><span>fecha, año, trimestre, mes, quinquenio</span></div>
+          <div class="tb"><b>dim_cliente</b><span>nombre, ciudad</span></div>
+          <div class="tb"><b>dim_producto</b><span>nombre, precio, stock → proveedor</span></div>
+          <div class="tb"><b>dim_forma_pago</b><span>Tarjeta, Transferencia, Efectivo</span></div>
+          <div class="tb fact"><b>fact_ventas</b><span>189 facturas: cantidad, precio, valor</span></div>
+          <div class="tb"><b>dim_tipo_venta</b><span>Online, Mayorista, Tienda</span></div>
+          <div class="tb"><b>dim_proveedor</b><span>empresa, ciudad, contacto</span></div>
+          <div class="tb fact"><b>fact_pedidos</b><span>200 pedidos: cantidad, valor estimado</span></div>
+          <div class="tb"><b>dim_empleado</b><span>nombre, cargo, ciudad, activo</span></div>
+        </div>
+      </div>
+      <div>
+        <h3 style="margin-top:0">Consulta SQL que alimenta el tablero</h3>
+        <pre>SELECT v.id_factura, t.fecha, t.anio, t.trimestre, t.mes, t.quinquenio,
+       c.nombre_completo AS cliente, c.ciudad AS ciudad_cliente,
+       p.nombre_producto AS producto, pr.nombre_empresa AS proveedor,
+       fp.forma_pago, tv.tipo_venta,
+       v.cantidad, v.precio_unitario, v.valor_venta
+FROM fact_ventas v
+JOIN dim_tiempo t      ON v.id_tiempo = t.id_tiempo
+JOIN dim_cliente c     ON v.id_cliente = c.id_cliente
+JOIN dim_producto p    ON v.id_producto = p.id_producto
+JOIN dim_proveedor pr  ON p.id_proveedor = pr.id_proveedor
+JOIN dim_forma_pago fp ON v.id_forma_pago = fp.id_forma_pago
+JOIN dim_tipo_venta tv ON v.id_tipo_venta = tv.id_tipo_venta
+ORDER BY t.fecha, v.id_factura</pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="t-doc">
+    <h2 id="t-doc">Documentación de la aplicación</h2>
+    <div class="doc">
+      <div>
+        <h3>Cómo está construida</h3>
+        <ol class="steps">
+          <li><b>Extracción:</b> pandas lee las hojas Clientes, Empleados, Facturas, Pedidos,
+            Productos y Proveedores.</li>
+          <li><b>Transformación:</b> se calculan el valor de cada venta (cantidad × precio
+            unitario), la ciudad a partir de la dirección y la dimensión tiempo.</li>
+          <li><b>Carga:</b> las 9 tablas del modelo estrella se crean en la base de datos.</li>
+          <li><b>Consulta:</b> el tablero lee los datos del DW con SQL (no del Excel).</li>
+          <li><b>Seaborn:</b> cada uno de los 10 gráficos de ventas se dibuja para las 16
+            combinaciones de filtros (4 formas de pago × 4 tipos de venta). Junto a cada imagen
+            se guarda la posición de cada barra, punto o celda.</li>
+          <li><b>JavaScript:</b> los filtros cambian las imágenes y recalculan los indicadores;
+            al pasar el mouse se muestra el valor del elemento señalado.</li>
+        </ol>
+      </div>
+      <div>
+        <h3>Indicadores</h3>
+        <p><b>Ventas totales</b> = suma de cantidad × precio unitario. <b>Ticket promedio</b> =
+          ventas ÷ número de facturas. Los valores están en las unidades monetarias de la base.</p>
+        <h3>Cómo ejecutarla</h3>
+        <p>En Google Colab suba <code>MiTiendaOnline.xls</code>, pegue el script
+          <code>dashboard_mitienda.py</code> y ejecútelo. Para usar PostgreSQL instale
+          <code>sqlalchemy psycopg2-binary</code>, escriba sus credenciales en
+          <code>CONEXIONES</code> y cambie <code>MOTOR = "postgresql"</code>.</p>
+        <h3>Origen de esta versión</h3>
+        <p>Generada el 18/10/2026 17:35 con el DW en SQLite.</p>
+      </div>
+    </div>
+  </section>
+</div></main>
+
+<footer><div class="inner">
+  <span><b>Machine Learning</b></span>
+  <span>Elaborado por: Catalina Correa · Python, pandas, SQL y Seaborn.</span>
+</div></footer>
+
+<script>
+/* ===== Datos generados en Python ===== */
+const IMAGENES = {"Todas|Todos": {"anio": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAkQAAAFXCAYAAABDSlHyAAAAOnRFWHRTb2Z0d2FyZQBNYXRwbG90bGliIHZlcnNpb24zLjEwLjAsIGh0dHBzOi8vbWF0cGxvdGxpYi5vcmcvlHJ[...]
